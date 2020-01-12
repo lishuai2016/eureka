@@ -49,7 +49,10 @@ import com.netflix.eureka.util.EurekaMonitors;
  * {@link com.netflix.discovery.shared.Applications}.
  *
  * @author Karthik Ranganathan, Greg Kim
- *
+
+处理所有应用的请求操作的 Resource ( Controller )。
+
+接收全量获取请求，映射 ApplicationsResource#getContainers() 方法
  */
 @Path("/{version}/apps")
 @Produces({"application/xml", "application/json"})
@@ -108,6 +111,7 @@ public class ApplicationsResource {
      *
      * @return a response containing information about all {@link com.netflix.discovery.shared.Applications}
      *         from the {@link AbstractInstanceRegistry}.
+     *         接收全量获取请求
      */
     @GET
     public Response getContainers(@PathParam("version") String version,
@@ -127,20 +131,23 @@ public class ApplicationsResource {
             EurekaMonitors.GET_ALL_WITH_REMOTE_REGIONS.increment();
         }
 
+        // 判断是否可以访问
+        //Eureka-Server 启动完成，但是未处于就绪( Ready )状态，不接受请求全量应用注册信息的请求，
+        // 例如，Eureka-Server 启动时，未能从其他 Eureka-Server 集群的节点获取到应用注册信息。
         // Check if the server allows the access to the registry. The server can
         // restrict access if it is not
         // ready to serve traffic depending on various reasons.
         if (!registry.shouldAllowAccess(isRemoteRegionRequested)) {
             return Response.status(Status.FORBIDDEN).build();
         }
-        CurrentRequestVersion.set(Version.toEnum(version));
-        KeyType keyType = Key.KeyType.JSON;
+        CurrentRequestVersion.set(Version.toEnum(version)); // API 版本
+        KeyType keyType = Key.KeyType.JSON;// 返回数据格式
         String returnMediaType = MediaType.APPLICATION_JSON;
         if (acceptHeader == null || !acceptHeader.contains(HEADER_JSON_VALUE)) {
             keyType = Key.KeyType.XML;
             returnMediaType = MediaType.APPLICATION_XML;
         }
-
+// 响应缓存键( KEY )
         Key cacheKey = new Key(Key.EntityType.Application,
                 ResponseCacheImpl.ALL_APPS,
                 keyType, CurrentRequestVersion.get(), EurekaAccept.fromString(eurekaAccept), regions

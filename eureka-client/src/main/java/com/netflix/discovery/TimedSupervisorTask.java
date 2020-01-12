@@ -31,12 +31,17 @@ public class TimedSupervisorTask extends TimerTask {
     private final Counter throwableCounter;
     private final LongGauge threadPoolLevelGauge;
 
-    private final ScheduledExecutorService scheduler;
-    private final ThreadPoolExecutor executor;
-    private final long timeoutMillis;
-    private final Runnable task;
+    private final ScheduledExecutorService scheduler;// 定时任务服务
+    private final ThreadPoolExecutor executor;//执行子任务线程池
+    private final long timeoutMillis;//子任务执行超时时间
+    private final Runnable task;//子任务[心跳线程]
 
-    private final AtomicLong delay;
+    private final AtomicLong delay;//当前任子务执行频率
+    /**
+     * 最大子任务执行频率
+     *
+     * 子任务执行超时情况下使用
+     */
     private final long maxDelay;
 
     public TimedSupervisorTask(String name, ScheduledExecutorService scheduler, ThreadPoolExecutor executor,
@@ -61,17 +66,17 @@ public class TimedSupervisorTask extends TimerTask {
     public void run() {
         Future<?> future = null;
         try {
-            future = executor.submit(task);
+            future = executor.submit(task);// 提交 任务
             threadPoolLevelGauge.set((long) executor.getActiveCount());
-            future.get(timeoutMillis, TimeUnit.MILLISECONDS);  // block until done or timeout
-            delay.set(timeoutMillis);
+            future.get(timeoutMillis, TimeUnit.MILLISECONDS);  // block until done or timeout  // 等待任务 执行完成 或 超时
+            delay.set(timeoutMillis);  // 设置 下一次任务执行频率
             threadPoolLevelGauge.set((long) executor.getActiveCount());
             successCounter.increment();
         } catch (TimeoutException e) {
             logger.warn("task supervisor timed out", e);
             timeoutCounter.increment();
 
-            long currentDelay = delay.get();
+            long currentDelay = delay.get();// 设置 下一次任务执行频率
             long newDelay = Math.min(maxDelay, currentDelay * 2);
             delay.compareAndSet(currentDelay, newDelay);
 
@@ -92,11 +97,11 @@ public class TimedSupervisorTask extends TimerTask {
 
             throwableCounter.increment();
         } finally {
-            if (future != null) {
+            if (future != null) {// 取消 未完成的任务
                 future.cancel(true);
             }
 
-            if (!scheduler.isShutdown()) {
+            if (!scheduler.isShutdown()) { // 调度 下次任务
                 scheduler.schedule(this, delay.get(), TimeUnit.MILLISECONDS);
             }
         }

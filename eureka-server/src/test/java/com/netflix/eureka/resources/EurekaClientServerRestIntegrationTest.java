@@ -51,12 +51,12 @@ public class EurekaClientServerRestIntegrationTest {
 
     private static final Pattern WAR_PATTERN = Pattern.compile("eureka-server.*.war");
 
-    private static EurekaServerConfig eurekaServerConfig;
+    private static EurekaServerConfig eurekaServerConfig;//服务端的配置
 
-    private static Server server;
-    private static TransportClientFactory httpClientFactory;
+    private static Server server;//jetty web
+    private static TransportClientFactory httpClientFactory;//Jersey客户端工厂
 
-    private static EurekaHttpClient jerseyEurekaClient;
+    private static EurekaHttpClient jerseyEurekaClient;//链接server的客户端
     private static JerseyReplicationClient jerseyReplicationClient;
 
     /**

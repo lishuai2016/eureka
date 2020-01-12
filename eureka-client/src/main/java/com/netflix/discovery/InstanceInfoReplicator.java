@@ -24,21 +24,29 @@ import java.util.concurrent.atomic.AtomicReference;
  *   on-demand update).
  *
  *   @author dliu
+ *
+ *   任务类：
+ *   更新以及复制本地的实例信息到server端。这个任务的性质：
+ *   - 单线程更新确保串行化；
+ *   - 更新任务可以被调度通过onDemandUpdate；
+ *   - 任务的处理过程被限流
+ *   - 新的更新任务被上一个更新任务调度。
+ *
  */
 class InstanceInfoReplicator implements Runnable {
     private static final Logger logger = LoggerFactory.getLogger(InstanceInfoReplicator.class);
 
     private final DiscoveryClient discoveryClient;
-    private final InstanceInfo instanceInfo;
+    private final InstanceInfo instanceInfo;//应用实例信息
 
-    private final int replicationIntervalSeconds;
-    private final ScheduledExecutorService scheduler;
-    private final AtomicReference<Future> scheduledPeriodicRef;
+    private final int replicationIntervalSeconds;//定时执行频率，单位：秒
+    private final ScheduledExecutorService scheduler;//定时执行器
+    private final AtomicReference<Future> scheduledPeriodicRef;//定时执行任务的 Future
 
-    private final AtomicBoolean started;
-    private final RateLimiter rateLimiter;
-    private final int burstSize;
-    private final int allowedRatePerMinute;
+    private final AtomicBoolean started;//是否开启调度
+    private final RateLimiter rateLimiter;// 限流相关
+    private final int burstSize;// 限流相关
+    private final int allowedRatePerMinute;// 限流相关
 
     InstanceInfoReplicator(DiscoveryClient discoveryClient, InstanceInfo instanceInfo, int replicationIntervalSeconds, int burstSize) {
         this.discoveryClient = discoveryClient;
@@ -62,7 +70,8 @@ class InstanceInfoReplicator implements Runnable {
 
     public void start(int initialDelayMs) {
         if (started.compareAndSet(false, true)) {
-            instanceInfo.setIsDirty();  // for initial register
+            instanceInfo.setIsDirty();  // for initial register // 设置 应用实例信息 数据不一致
+            // 提交任务，并设置该任务的 Future
             Future next = scheduler.schedule(this, initialDelayMs, TimeUnit.SECONDS);
             scheduledPeriodicRef.set(next);
         }
@@ -85,19 +94,19 @@ class InstanceInfoReplicator implements Runnable {
     }
 
     public boolean onDemandUpdate() {
-        if (rateLimiter.acquire(burstSize, allowedRatePerMinute)) {
+        if (rateLimiter.acquire(burstSize, allowedRatePerMinute)) {// 限流相关，
             if (!scheduler.isShutdown()) {
                 scheduler.submit(new Runnable() {
                     @Override
                     public void run() {
                         logger.debug("Executing on-demand update of local InstanceInfo");
-    
+                        // 取消任务  调用 Future#cancel(false) 方法，取消定时任务，避免无用的注册
                         Future latestPeriodic = scheduledPeriodicRef.get();
                         if (latestPeriodic != null && !latestPeriodic.isDone()) {
                             logger.debug("Canceling the latest scheduled update, it will be rescheduled at the end of on demand update");
                             latestPeriodic.cancel(false);
                         }
-    
+                        // 再次调用  调用 InstanceInfoReplicator#run() 方法，发起注册。
                         InstanceInfoReplicator.this.run();
                     }
                 });
@@ -114,16 +123,17 @@ class InstanceInfoReplicator implements Runnable {
 
     public void run() {
         try {
-            discoveryClient.refreshInstanceInfo();
+            discoveryClient.refreshInstanceInfo();// 刷新 应用实例信息.此处可能导致应用实例信息数据不一致
 
             Long dirtyTimestamp = instanceInfo.isDirtyWithTime();
-            if (dirtyTimestamp != null) {
-                discoveryClient.register();
-                instanceInfo.unsetIsDirty(dirtyTimestamp);
+            if (dirtyTimestamp != null) {// 判断 应用实例信息 是否数据不一致
+                discoveryClient.register();// 发起注册
+                instanceInfo.unsetIsDirty(dirtyTimestamp);// 设置 应用实例信息 数据一致
             }
         } catch (Throwable t) {
             logger.warn("There was a problem with the instance info replicator", t);
         } finally {
+            // 提交任务，并设置该任务的 Future
             Future next = scheduler.schedule(this, replicationIntervalSeconds, TimeUnit.SECONDS);
             scheduledPeriodicRef.set(next);
         }

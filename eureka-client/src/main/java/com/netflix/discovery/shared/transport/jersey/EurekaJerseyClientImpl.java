@@ -33,6 +33,11 @@ import static com.netflix.discovery.util.DiscoveryBuildInfo.buildVersion;
 
 /**
  * @author Tomasz Bak
+ * 唯一实现
+ *
+ * 包含一个标准的Jersey client    ApacheHttpClient4，用于向server端发起http的请求
+ *
+ * 这里根据ClientConfig配置来生成apacheHttpClient
  */
 public class EurekaJerseyClientImpl implements EurekaJerseyClient {
 
@@ -42,6 +47,7 @@ public class EurekaJerseyClientImpl implements EurekaJerseyClient {
     private static final String KEYSTORE_TYPE = "JKS";
 
     private final ApacheHttpClient4 apacheHttpClient;
+    //Apache HttpClient 空闲连接清理器，负责周期性关闭处于 half-close 状态的空闲连接
     private final ApacheHttpClientConnectionCleaner apacheHttpClientConnectionCleaner;
 
     ClientConfig jerseyClientConfig;
@@ -76,7 +82,7 @@ public class EurekaJerseyClientImpl implements EurekaJerseyClient {
         apacheHttpClient.destroy();
     }
 
-    public static class EurekaJerseyClientBuilder {
+    public static class EurekaJerseyClientBuilder {//这个类是关键，构建该类的实现
 
         private boolean systemSSL;
         private String clientName;
@@ -168,14 +174,14 @@ public class EurekaJerseyClientImpl implements EurekaJerseyClient {
             this.decoderWrapper = decoderWrapper;
             return this;
         }
-        
+
         public EurekaJerseyClientBuilder withCustomSSL(SSLContext sslContext) {
             this.sslContext = sslContext;
             return this;
         }
 
-        public EurekaJerseyClient build() {
-            MyDefaultApacheHttpClient4Config config = new MyDefaultApacheHttpClient4Config();
+        public EurekaJerseyClient build() {//创建 EurekaJerseyClientImpl
+            MyDefaultApacheHttpClient4Config config = new MyDefaultApacheHttpClient4Config();//配置类
             try {
                 return new EurekaJerseyClientImpl(connectionTimeout, readTimeout, connectionIdleTimeout, config);
             } catch (Throwable e) {
@@ -183,7 +189,16 @@ public class EurekaJerseyClientImpl implements EurekaJerseyClient {
             }
         }
 
-        class MyDefaultApacheHttpClient4Config extends DefaultApacheHttpClient4Config {
+        /**
+         1、自定义的请求、响应的编解码器 com.netflix.discovery.provider.DiscoveryJerseyProvider 。
+         2、禁用重定向，使用 RedirectingEurekaHttpClient 实现该特性。
+         3、自定义 UserAgent 。
+         4、自定义 Http Proxy 。
+         5、SSL 功能的增强。ApacheHttpClient4 使用的是 Apache HttpClient 4.1.1 版本，
+         com.netflix.discovery.shared.transport.jersey.SSLSocketFactoryAdapter 将
+         Apache HttpClient 4.3.4 对 SSL 功能的增强适配到老版本 API
+         */
+        class MyDefaultApacheHttpClient4Config extends DefaultApacheHttpClient4Config {//嵌套的内部类
             MyDefaultApacheHttpClient4Config() {
                 MonitoredConnectionManager cm;
 
@@ -256,11 +271,11 @@ public class EurekaJerseyClientImpl implements EurekaJerseyClient {
 
                         sslContext.init(null, trustManagers, null);
                     }
-                    
+
                     if (hostnameVerifier == null) {
                         hostnameVerifier = SSLSocketFactory.ALLOW_ALL_HOSTNAME_VERIFIER;
                     }
-                    
+
                     SSLConnectionSocketFactory customSslSocketFactory = new SSLConnectionSocketFactory(sslContext, hostnameVerifier);
                     SSLSocketFactory sslSocketFactory = new SSLSocketFactoryAdapter(customSslSocketFactory);
                     SchemeRegistry sslSchemeRegistry = new SchemeRegistry();
@@ -288,7 +303,7 @@ public class EurekaJerseyClientImpl implements EurekaJerseyClient {
                         new Scheme("http", 80, PlainSocketFactory.getSocketFactory()));
                 registry.register(
                         new Scheme("https", 443, new SSLSocketFactoryAdapter(SSLConnectionSocketFactory.getSocketFactory())));
-                
+
                 return new MonitoredConnectionManager(clientName, registry);
             }
         }

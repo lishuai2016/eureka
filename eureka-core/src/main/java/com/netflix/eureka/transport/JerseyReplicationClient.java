@@ -35,6 +35,12 @@ import static com.netflix.discovery.shared.transport.EurekaHttpResponse.anEureka
 
 /**
  * @author Tomasz Bak
+ *
+ * Eureka-Server 集群内，Eureka-Server 请求 其它的Eureka-Server 的网络通信
+ *
+ * erseyReplicationClient 没有专属的工厂。
+
+调用 JerseyReplicationClient#createReplicationClient(...) 静态方法，创建 JerseyReplicationClient
  */
 public class JerseyReplicationClient extends AbstractJerseyEurekaHttpClient implements HttpReplicationClient {
 
@@ -50,7 +56,7 @@ public class JerseyReplicationClient extends AbstractJerseyEurekaHttpClient impl
     }
 
     @Override
-    protected void addExtraHeaders(Builder webResource) {
+    protected void addExtraHeaders(Builder webResource) {//添加自定义头 x-netflix-discovery-replication=true
         webResource.header(PeerEurekaNode.HEADER_REPLICATION, "true");
     }
 
@@ -136,7 +142,7 @@ public class JerseyReplicationClient extends AbstractJerseyEurekaHttpClient impl
         super.shutdown();
         jerseyClient.destroyResources();
     }
-
+    //静态方法直接生成实例
     public static JerseyReplicationClient createReplicationClient(EurekaServerConfig config, ServerCodecs serverCodecs, String serviceUrl) {
         String name = JerseyReplicationClient.class.getSimpleName() + ": " + serviceUrl + "apps/: ";
 

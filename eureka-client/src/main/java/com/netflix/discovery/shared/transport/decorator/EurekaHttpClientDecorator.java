@@ -25,10 +25,12 @@ import com.netflix.discovery.shared.transport.EurekaHttpResponse;
 
 /**
  * @author Tomasz Bak
+ *
+ * EurekaHttpClient 委托者抽象类
  */
 public abstract class EurekaHttpClientDecorator implements EurekaHttpClient {
 
-    public enum RequestType {
+    public enum RequestType {//RequestType ，请求类型枚举类
         Register,
         Cancel,
         SendHeartBeat,
@@ -43,19 +45,19 @@ public abstract class EurekaHttpClientDecorator implements EurekaHttpClient {
         GetApplicationInstance
     }
 
-    public interface RequestExecutor<R> {
+    public interface RequestExecutor<R> {//请求执行器接口
         EurekaHttpResponse<R> execute(EurekaHttpClient delegate);
 
         RequestType getRequestType();
     }
 
-    protected abstract <R> EurekaHttpResponse<R> execute(RequestExecutor<R> requestExecutor);
+    protected abstract <R> EurekaHttpResponse<R> execute(RequestExecutor<R> requestExecutor);//抽象方法，子类实现该方法，实现自己的特性。
 
     @Override
     public EurekaHttpResponse<Void> register(final InstanceInfo info) {
-        return execute(new RequestExecutor<Void>() {
+        return execute(new RequestExecutor<Void>() {//将原有的注册实现通过 RequestExecutor 传递进去
             @Override
-            public EurekaHttpResponse<Void> execute(EurekaHttpClient delegate) {
+            public EurekaHttpResponse<Void> execute(EurekaHttpClient delegate) {//这里的参数delegate是如何传递过来的？？？
                 return delegate.register(info);
             }
 
@@ -86,7 +88,7 @@ public abstract class EurekaHttpClientDecorator implements EurekaHttpClient {
                                                           final String id,
                                                           final InstanceInfo info,
                                                           final InstanceStatus overriddenStatus) {
-        return execute(new RequestExecutor<InstanceInfo>() {
+        return execute(new RequestExecutor<InstanceInfo>() {//发送心跳
             @Override
             public EurekaHttpResponse<InstanceInfo> execute(EurekaHttpClient delegate) {
                 return delegate.sendHeartBeat(appName, id, info, overriddenStatus);

@@ -58,7 +58,7 @@ import com.thoughtworks.xstream.annotations.XStreamImplicit;
  * </p>
  *
  * @author Karthik Ranganathan
- *
+ * 注册的应用集合
  */
 @Serializer("com.netflix.discovery.converters.EntityBodyConverter")
 @XStreamAlias("applications")
@@ -80,10 +80,14 @@ public class Applications {
 
     private static final String STATUS_DELIMITER = "_";
 
-    private String appsHashCode;
+    private String appsHashCode;//应用集合信息 hashcode
     private Long versionDelta;
     @XStreamImplicit
-    private final AbstractQueue<Application> applications;
+    private final AbstractQueue<Application> applications;//应用队列
+    /**
+     * 应用映射
+     * key：应用名
+     */
     private final Map<String, Application> appNameApplicationMap;
     private final Map<String, VipIndexSupport> virtualHostNameAppMap;
     private final Map<String, VipIndexSupport> secureVirtualHostNameAppMap;
@@ -162,7 +166,7 @@ public class Applications {
         return Optional.ofNullable(this.virtualHostNameAppMap.get(virtualHostName.toUpperCase(Locale.ROOT)))
             .map(VipIndexSupport::getVipList)
             .map(AtomicReference::get)
-            .orElseGet(Collections::emptyList); 
+            .orElseGet(Collections::emptyList);
     }
 
     /**
@@ -178,7 +182,7 @@ public class Applications {
         return Optional.ofNullable(this.secureVirtualHostNameAppMap.get(secureVirtualHostName.toUpperCase(Locale.ROOT)))
                 .map(VipIndexSupport::getVipList)
                 .map(AtomicReference::get)
-                .orElseGet(Collections::emptyList);        
+                .orElseGet(Collections::emptyList);
     }
 
     /**
@@ -212,7 +216,7 @@ public class Applications {
 
     /**
      * Used by the eureka server. Not for external use.
-     * 
+     *
      * @return the string indicating the hashcode based on the applications
      *         stored.
      *
@@ -231,15 +235,16 @@ public class Applications {
      */
     @JsonIgnore
     public String getReconcileHashCode() {
+        // 计数集合 key：应用实例状态
         TreeMap<String, AtomicInteger> instanceCountMap = new TreeMap<String, AtomicInteger>();
-        populateInstanceCountMap(instanceCountMap);
-        return getReconcileHashCode(instanceCountMap);
+        populateInstanceCountMap(instanceCountMap);//计算每个应用实例状态的数量
+        return getReconcileHashCode(instanceCountMap);// 计算 hashcode
     }
 
     /**
      * Populates the provided instance count map. The instance count map is used
      * as part of the general app list synchronization mechanism.
-     * 
+     *
      * @param instanceCountMap
      *            the map to populate
      */
@@ -257,7 +262,7 @@ public class Applications {
      * Gets the reconciliation hashcode. The hashcode is used to determine
      * whether the applications list has changed since the last time it was
      * acquired.
-     * 
+     *
      * @param instanceCountMap
      *            the instance count map to use for generating the hash
      * @return the hash code for this instance
@@ -274,7 +279,7 @@ public class Applications {
     /**
      * Shuffles the provided instances so that they will not always be returned
      * in the same order.
-     * 
+     *
      * @param filterUpInstances
      *            whether to return only UP instances
      */
@@ -285,7 +290,7 @@ public class Applications {
     /**
      * Shuffles a whole region so that the instances will not always be returned
      * in the same order.
-     * 
+     *
      * @param remoteRegionsRegistry
      *            the map of remote region names to their registries
      * @param clientConfig
@@ -300,9 +305,9 @@ public class Applications {
                 instanceRegionChecker);
     }
 
-    private void shuffleInstances(boolean filterUpInstances, 
+    private void shuffleInstances(boolean filterUpInstances,
             boolean indexByRemoteRegions,
-            @Nullable Map<String, Applications> remoteRegionsRegistry, 
+            @Nullable Map<String, Applications> remoteRegionsRegistry,
             @Nullable EurekaClientConfig clientConfig,
             @Nullable InstanceRegionChecker instanceRegionChecker) {
         Map<String, VipIndexSupport> secureVirtualHostNameAppMap = new HashMap<>();
@@ -384,7 +389,7 @@ public class Applications {
 
     /**
      * Adds the instances to the internal vip address map.
-     * 
+     *
      * @param app
      *            - the applications for which the instances need to be added.
      */

@@ -20,10 +20,11 @@ import java.util.List;
 
 /**
  * @author Tomasz Bak
+ * 集群解析器接口
  */
 public interface ClusterResolver<T extends EurekaEndpoint> {
 
-    String getRegion();
+    String getRegion();//区域
 
-    List<T> getClusterEndpoints();
+    List<T> getClusterEndpoints();//集群数组
 }

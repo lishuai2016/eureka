@@ -51,8 +51,8 @@ public class Jersey1TransportClientFactories implements TransportClientFactories
                                                                    final InstanceInfo myInstanceInfo) {
         return newTransportClientFactory(clientConfig, additionalFilters, myInstanceInfo, Optional.empty(), Optional.empty());
     }
-    
-    @Override
+
+    @Override  //实例化入口  创建 registrationClient 和 queryClient 公用的委托的 EurekaHttpClientFactory
     public TransportClientFactory newTransportClientFactory(EurekaClientConfig clientConfig,
             Collection<ClientFilter> additionalFilters, InstanceInfo myInstanceInfo, Optional<SSLContext> sslContext,
             Optional<HostnameVerifier> hostnameVerifier) {
@@ -64,7 +64,7 @@ public class Jersey1TransportClientFactories implements TransportClientFactories
                 sslContext,
                 hostnameVerifier
         );
-        
+
         final TransportClientFactory metricsFactory = MetricsCollectingEurekaHttpClient.createFactory(jerseyFactory);
 
         return new TransportClientFactory() {

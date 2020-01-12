@@ -1,5 +1,8 @@
 buildscript {
-    repositories { jcenter() }
+    repositories {
+        jcenter()
+        mavenLocal() // 使用本地仓库
+    }
 
     dependencies {
         classpath 'com.netflix.nebula:gradle-extra-configurations-plugin:2.2.+'
@@ -59,6 +62,7 @@ subprojects {
 
     repositories {
         jcenter()
+        mavenLocal() // 使用本地仓库
     }
 
     test {

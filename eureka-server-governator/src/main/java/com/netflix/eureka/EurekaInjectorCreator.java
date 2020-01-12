@@ -36,7 +36,7 @@ public class EurekaInjectorCreator {
                                     filter("/v2/apps", "/v2/apps/*").through(GzipEncodingEnforcingFilter.class);
                                     //filter("/*").through(RateLimitingFilter.class);  // enable if needed
 
-                                    // REST
+                                    // REST   类似于配置controller类所在的包路径来启动URI请求映射
                                     Map<String, String> params = new HashMap<String, String>();
                                     params.put(PackagesResourceConfig.PROPERTY_PACKAGES, "com.sun.jersey");
                                     params.put(PackagesResourceConfig.PROPERTY_PACKAGES, "com.netflix");

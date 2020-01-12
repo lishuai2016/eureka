@@ -23,6 +23,8 @@ import java.util.List;
 
 /**
  * @author Tomasz Bak
+ * EndPoint ，服务端点。例如，Eureka-Server 的访问地址
+ * 唯一的实现
  */
 public class DefaultEndpoint implements EurekaEndpoint {
 
@@ -32,7 +34,7 @@ public class DefaultEndpoint implements EurekaEndpoint {
     protected final String relativeUri;
     protected final String serviceUrl;
 
-    public DefaultEndpoint(String serviceUrl) {
+    public DefaultEndpoint(String serviceUrl) {//根据serviceUrl提取server端的信息
         this.serviceUrl = serviceUrl;
 
         try {

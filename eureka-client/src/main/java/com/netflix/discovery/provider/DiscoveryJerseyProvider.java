@@ -107,7 +107,7 @@ public class DiscoveryJerseyProvider implements MessageBodyWriter<Object>, Messa
                 throw new WebApplicationException(e, createErrorReply(500, e, mediaType));
             }
             LOGGER.debug("Cannot parse request body", e);
-            throw new WebApplicationException(e, createErrorReply(400, "cannot parse request body", mediaType));
+            throw new WebApplicationException(e, createErrorReply(400, "cannot parse request body", mediaType));//这里抛出异常
         }
     }
 

@@ -35,7 +35,71 @@ import com.netflix.eureka.aws.AwsBindingStrategy;
  * </p>
  *
  * @author Karthik Ranganathan
- *
+
+请求认证相关
+    Eureka-Server 未实现认证。在 Spring-Cloud-Eureka-Server，通过 spring-boot-starter-security 模块支持。《spring cloud-给Eureka Server加上安全的用户认证》有详细解析。
+    #shouldLogIdentityHeaders() ：打印访问的客户端名和版本号，配合 Netflix Servo 实现监控信息采集。
+    请求限流相关
+    《Eureka 源码解析 —— 基于令牌桶算法的 RateLimiter》 有详细解析。
+    #isRateLimiterEnabled() ：请求限流是否开启。
+    #isRateLimiterThrottleStandardClients() ：是否对标准客户端判断是否限流。标准客户端通过请求头( header )的 "DiscoveryIdentity-Name" 来判断，是否在标准客户端名集合里。
+    #getRateLimiterPrivilegedClients() ：标准客户端名集合。默认包含"DefaultClient" 和 "DefaultServer" 。
+    #getRateLimiterBurstSize() ：速率限制的 burst size ，使用令牌桶算法。
+    #getRateLimiterRegistryFetchAverageRate() ：增量拉取注册信息的速率限制。
+    #getRateLimiterFullFetchAverageRate() ：全量拉取注册信息的速率限制。
+
+获取注册信息请求相关
+
+    《Eureka 源码解析 —— 应用实例注册发现 （六）之全量获取》 有详细解析。
+    《Eureka 源码解析 —— 应用实例注册发现 （七）之增量获取》 有详细解析。
+    #shouldUseReadOnlyResponseCache() ：是否开启只读请求响应缓存。响应缓存 ( ResponseCache ) 机制目前使用两层缓存策略。优先读取只读缓存，读取不到后读取固定过期的读写缓存。
+    #getResponseCacheUpdateIntervalMs() ：只读缓存更新频率，单位：毫秒。只读缓存定时更新任务只更新读取过请求 (com.netflix.eureka.registry.Key)，因此虽然永不过期，也会存在读取不到的情况。
+    #getResponseCacheAutoExpirationInSeconds() ：读写缓存写入后过期时间，单位：秒。
+    #getRetentionTimeInMSInDeltaQueue()：租约变更记录过期时长，单位：毫秒。默认值 ： 3 60 1000 毫秒。
+    #DeltaRetentionTimerIntervalInMs()：移除队列里过期的租约变更记录的定时任务执行频率，单位：毫秒。默认值 ：30 * 1000 毫秒。
+
+自我保护机制相关
+
+    在 《Eureka 源码解析 —— 应用实例注册发现（四）之自我保护机制》 有详细解析。
+    FROM 周立——《理解Eureka的自我保护模式》
+    当Eureka Server节点在短时间内丢失过多客户端时（可能发生了网络分区故障），那么这个节点就会进入自我保护模式。
+    一旦进入该模式，Eureka Server就会保护服务注册表中的信息，不再删除服务注册表中的数据（也就是不会注销任何微服务）。
+    当网络故障恢复后，该Eureka Server节点会自动退出自我保护模式。
+
+    #getRenewalPercentThreshold() ：开启自我保护模式比例，超过该比例后开启自我保护模式。
+
+    #getRenewalThresholdUpdateIntervalMs() ：自我保护模式比例更新定时任务执行频率，单位：毫秒。
+
+注册的应用实例的租约过期相关
+
+    在 《Eureka 源码解析 —— 应用实例注册发现（五）之过期》 有详细解析。
+
+    #getEvictionIntervalTimerInMs() ：租约过期定时任务执行频率，单位：毫秒。
+
+Eureka-Server 远程节点( 非集群 )读取相关
+
+    TODO[0009]：RemoteRegionRegistry
+    #getRemoteRegionUrlsWithName() ：TODO[0009]：RemoteRegionRegistry。
+    key ：Eureka-Server 区域( region )
+    value ：Eureka-Server 地址
+    #getRemoteRegionAppWhitelist() ：TODO[0009]：RemoteRegionRegistry。
+    #getRemoteRegionRegistryFetchInterval() ：TODO[0009]：RemoteRegionRegistry。
+    #getRegistrySyncRetries() ：Eureka-Server 启动时，从远程 Eureka-Server 读取失败重试次数。
+    #getRegistrySyncRetryWaitMs() ：Eureka-Server 启动时，从远程 Eureka-Server 读取失败等待( sleep )间隔，单位：毫秒。
+    #getRemoteRegionFetchThreadPoolSize() ：TODO[0009]：RemoteRegionRegistry。
+    #disableTransparentFallbackToOtherRegion() ：是否禁用本地读取不到注册信息，从远程 Eureka-Server 读取。
+
+Eureka-Server 集群同步相关
+
+    在 《Eureka 源码解析 —— Eureka-Server 集群同步》
+    #getMaxThreadsForPeerReplication() ：同步应用实例信息最大线程数。
+    #getMaxElementsInPeerReplicationPool() ：待执行同步应用实例信息事件缓冲最大数量。
+    #getMaxTimeForReplication() ：执行单个同步应用实例信息状态任务最大时间。
+    #shouldSyncWhenTimestampDiffers() ：是否同步应用实例信息，当应用实例信息最后更新时间戳( lastDirtyTimestamp )发生改变。
+    #getWaitTimeInMsWhenSyncEmpty() ：Eureka-Server 启动时，从远程 Eureka-Server 读取不到注册信息时，多长时间不允许 Eureka-Client 访问。
+    #getPeerEurekaNodesUpdateIntervalMs() ：Eureka-Server 集群节点更新频率，单位：毫秒
+
+
  */
 public interface EurekaServerConfig {
 

@@ -31,6 +31,9 @@ import org.slf4j.LoggerFactory;
  * The class that initializes information required for registration with
  * <tt>Eureka Server</tt> and to be discovered by other components.
  *
+ * 初始化注册时的必须信息
+ *
+ *
  * <p>
  * The information required for registration is provided by the user by passing
  * the configuration defined by the contract in {@link EurekaInstanceConfig}
@@ -54,14 +57,14 @@ public class ApplicationInfoManager {
             return prev;
         }
     };
-
+    //单例
     private static ApplicationInfoManager instance = new ApplicationInfoManager(null, null, null);
 
-    protected final Map<String, StatusChangeListener> listeners;
-    private final InstanceStatusMapper instanceStatusMapper;
+    protected final Map<String, StatusChangeListener> listeners;//状态变更监听器
+    private final InstanceStatusMapper instanceStatusMapper;//应用实例状态匹配
 
-    private InstanceInfo instanceInfo;
-    private EurekaInstanceConfig config;
+    private InstanceInfo instanceInfo;//应用实例信息
+    private EurekaInstanceConfig config;//应用实例配置
 
     public static class OptionalArgs {
         private InstanceStatusMapper instanceStatusMapper;
@@ -227,7 +230,7 @@ public class ApplicationInfoManager {
                         newSpotInstanceAction));
                 updateInstanceInfo(null , null );
             }
-        }        
+        }
     }
 
     private void updateInstanceInfo(String newAddress, String newIp) {
@@ -252,7 +255,8 @@ public class ApplicationInfoManager {
         }
         int currentLeaseDuration = config.getLeaseExpirationDurationInSeconds();
         int currentLeaseRenewal = config.getLeaseRenewalIntervalInSeconds();
-        if (leaseInfo.getDurationInSecs() != currentLeaseDuration || leaseInfo.getRenewalIntervalInSecs() != currentLeaseRenewal) {
+        if (leaseInfo.getDurationInSecs() != currentLeaseDuration // 租约过期时间 改变
+                || leaseInfo.getRenewalIntervalInSecs() != currentLeaseRenewal) {// 租约续约频率 改变
             LeaseInfo newLeaseInfo = LeaseInfo.Builder.newBuilder()
                     .setRenewalIntervalInSecs(currentLeaseRenewal)
                     .setDurationInSecs(currentLeaseDuration)

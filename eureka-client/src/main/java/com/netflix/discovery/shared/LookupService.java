@@ -25,6 +25,9 @@ import com.netflix.appinfo.InstanceInfo;
  * @author Karthik Ranganathan, Greg Kim.
  * @param <T> for backward compatibility
 
+查找服务接口，提供简单单一的方式获取应用集合(com.netflix.discovery.shared.Applications)
+和 应用实例信息集合( com.netflix.appinfo.InstanceInfo )
+
  */
 public interface LookupService<T> {
 

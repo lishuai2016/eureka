@@ -35,6 +35,8 @@ import org.slf4j.LoggerFactory;
 /**
  * A periodic process running in background cleaning Apache http client connection pool out of idle connections.
  * This prevents from accumulating unused connections in half-closed state.
+ *
+ * Apache HttpClient 空闲连接清理器，负责周期性关闭处于 half-close 状态的空闲连接
  */
 public class ApacheHttpClientConnectionCleaner {
 

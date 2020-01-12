@@ -28,13 +28,14 @@ import static com.netflix.discovery.shared.transport.EurekaHttpResponse.anEureka
 
 /**
  * @author Tomasz Bak
+ * 实现 EurekaHttpClient 的抽象类，真正实现了具体的 Eureka-Server API 调用方法
  */
 public abstract class AbstractJerseyEurekaHttpClient implements EurekaHttpClient {
 
     private static final Logger logger = LoggerFactory.getLogger(AbstractJerseyEurekaHttpClient.class);
 
-    protected final Client jerseyClient;
-    protected final String serviceUrl;
+    protected final Client jerseyClient;//【具体发送http请求】Jersey Client,来自com.netflix.discovery.shared.transport.jersey.EurekaJerseyClient.getClient()
+    protected final String serviceUrl;//请求的 Eureka-Server 地址
 
     protected AbstractJerseyEurekaHttpClient(Client jerseyClient, String serviceUrl) {
         this.jerseyClient = jerseyClient;
@@ -42,19 +43,20 @@ public abstract class AbstractJerseyEurekaHttpClient implements EurekaHttpClient
         logger.debug("Created client for url: {}", serviceUrl);
     }
 
+    //POST 请求 Eureka-Server 的 apps/${APP_NAME} 接口，参数为 InstanceInfo ，实现注册实例信息的注册。
     @Override
     public EurekaHttpResponse<Void> register(InstanceInfo info) {
         String urlPath = "apps/" + info.getAppName();
         ClientResponse response = null;
         try {
             Builder resourceBuilder = jerseyClient.resource(serviceUrl).path(urlPath).getRequestBuilder();
-            addExtraHeaders(resourceBuilder);
+            addExtraHeaders(resourceBuilder);// 设置 请求头
             response = resourceBuilder
-                    .header("Accept-Encoding", "gzip")
-                    .type(MediaType.APPLICATION_JSON_TYPE)
-                    .accept(MediaType.APPLICATION_JSON)
-                    .post(ClientResponse.class, info);
-            return anEurekaHttpResponse(response.getStatus()).headers(headersOf(response)).build();
+                    .header("Accept-Encoding", "gzip")// GZIP
+                    .type(MediaType.APPLICATION_JSON_TYPE)// 请求参数格式 JSON
+                    .accept(MediaType.APPLICATION_JSON)// 响应结果格式 JSON
+                    .post(ClientResponse.class, info);// 请求参数
+            return anEurekaHttpResponse(response.getStatus()).headers(headersOf(response)).build();// 创建 EurekaHttpResponse
         } finally {
             if (logger.isDebugEnabled()) {
                 logger.debug("Jersey HTTP POST {}/{} with instance {}; statusCode={}", serviceUrl, urlPath, info.getId(),
@@ -66,6 +68,10 @@ public abstract class AbstractJerseyEurekaHttpClient implements EurekaHttpClient
         }
     }
 
+    /**
+     调用 AbstractJerseyEurekaHttpClient#cancel(...) 方法，
+     DELETE 请求 Eureka-Server 的 apps/${APP_NAME}/${INSTANCE_INFO_ID} 接口，实现应用实例信息的下线
+     */
     @Override
     public EurekaHttpResponse<Void> cancel(String appName, String id) {
         String urlPath = "apps/" + appName + '/' + id;
@@ -85,6 +91,15 @@ public abstract class AbstractJerseyEurekaHttpClient implements EurekaHttpClient
         }
     }
 
+    /**
+     * 发起续租请求
+     * PUT 请求 Eureka-Server 的 apps/${APP_NAME}/${INSTANCE_INFO_ID} 接口，参数为 status、lastDirtyTimestamp、overriddenstatus，实现续租
+     * @param appName
+     * @param id
+     * @param info
+     * @param overriddenStatus
+     * @return
+     */
     @Override
     public EurekaHttpResponse<InstanceInfo> sendHeartBeat(String appName, String id, InstanceInfo info, InstanceStatus overriddenStatus) {
         String urlPath = "apps/" + appName + '/' + id;
@@ -160,6 +175,7 @@ public abstract class AbstractJerseyEurekaHttpClient implements EurekaHttpClient
         }
     }
 
+    //全量获取注册信息
     @Override
     public EurekaHttpResponse<Applications> getApplications(String... regions) {
         return getApplicationsInternal("apps/", regions);

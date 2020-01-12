@@ -21,7 +21,8 @@ import com.netflix.eureka.registry.AbstractInstanceRegistry;
 /**
  * This class is responsible for creating/renewing and evicting a <em>lease</em>
  * for a particular instance.
- *
+ * evicting 逐出
+ * renewal 恢复
  * <p>
  * Leases determine what instances receive traffic. When there is no renewal
  * request from the client, the lease gets expired and the instances are evicted
@@ -32,6 +33,7 @@ import com.netflix.eureka.registry.AbstractInstanceRegistry;
  * @author Karthik Ranganathan, Greg Kim
  *
  * @param <T>
+ *     租约管理器接口，提供租约的注册、续租、取消( 主动下线 )、过期( 过期下线 )。
  */
 public interface LeaseManager<T> {
 

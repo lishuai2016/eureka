@@ -43,7 +43,7 @@ import org.slf4j.LoggerFactory;
  * <p>
  *
  * @author Karthik Ranganathan, Greg Kim
- *
+ *单个集群节点
  */
 public class PeerEurekaNode {
 
@@ -73,15 +73,16 @@ public class PeerEurekaNode {
 
     public static final String HEADER_REPLICATION = "x-netflix-discovery-replication";
 
-    private final String serviceUrl;
-    private final EurekaServerConfig config;
-    private final long maxProcessingDelayMs;
-    private final PeerAwareInstanceRegistry registry;
+    private final String serviceUrl;//服务地址
+    private final EurekaServerConfig config;//Eureka-Server 配置
+    private final long maxProcessingDelayMs;//批任务同步最大延迟
+    private final PeerAwareInstanceRegistry registry;//应用实例注册表
     private final String targetHost;
-    private final HttpReplicationClient replicationClient;
+    private final HttpReplicationClient replicationClient;//集群  EurekaHttpClient
 
-    private final TaskDispatcher<String, ReplicationTask> batchingDispatcher;
-    private final TaskDispatcher<String, ReplicationTask> nonBatchingDispatcher;
+    private final TaskDispatcher<String, ReplicationTask> batchingDispatcher;//批量任务分发器
+    //创建单任务分发器，用于 Eureka-Server 向亚马逊 AWS 的 ASG ( Autoscaling Group ) 同步状态
+    private final TaskDispatcher<String, ReplicationTask> nonBatchingDispatcher;//单任务分发器
 
     public PeerEurekaNode(PeerAwareInstanceRegistry registry, String targetHost, String serviceUrl, HttpReplicationClient replicationClient, EurekaServerConfig config) {
         this(registry, targetHost, serviceUrl, replicationClient, config, BATCH_SIZE, MAX_BATCHING_DELAY_MS, RETRY_SLEEP_TIME_MS, SERVER_UNAVAILABLE_SLEEP_TIME_MS);
@@ -101,7 +102,7 @@ public class PeerEurekaNode {
 
         String batcherName = getBatcherName();
         ReplicationTaskProcessor taskProcessor = new ReplicationTaskProcessor(targetHost, replicationClient);
-        this.batchingDispatcher = TaskDispatchers.createBatchingTaskDispatcher(
+        this.batchingDispatcher = TaskDispatchers.createBatchingTaskDispatcher(// 初始化 集群复制任务处理器
                 batcherName,
                 config.getMaxElementsInPeerReplicationPool(),
                 batchSize,
@@ -111,7 +112,7 @@ public class PeerEurekaNode {
                 retrySleepTimeMs,
                 taskProcessor
         );
-        this.nonBatchingDispatcher = TaskDispatchers.createNonBatchingTaskDispatcher(
+        this.nonBatchingDispatcher = TaskDispatchers.createNonBatchingTaskDispatcher(// 初始化 单任务分发器
                 targetHost,
                 config.getMaxElementsInStatusReplicationPool(),
                 config.getMaxThreadsForStatusReplication(),
@@ -381,8 +382,8 @@ public class PeerEurekaNode {
         }
         return "target_" + batcherName;
     }
-
-    private static String taskId(String requestType, String appName, String id) {
+    //相同应用实例的相同同步操作使用相同任务编号
+    private static String taskId(String requestType, String appName, String id) {//生成任务的编号
         return requestType + '#' + appName + '/' + id;
     }
 

@@ -25,7 +25,7 @@ public final class ServerStatusEvaluators {
 
     private static final ServerStatusEvaluator LEGACY_EVALUATOR = new ServerStatusEvaluator() {
         @Override
-        public boolean accept(int statusCode, RequestType requestType) {
+        public boolean accept(int statusCode, RequestType requestType) {//判断响应状态码和请求类型是否能够接受
             if (statusCode >= 200 && statusCode < 300 || statusCode == 302) {
                 return true;
             } else if (requestType == RequestType.Register && statusCode == 404) {

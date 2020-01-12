@@ -23,7 +23,7 @@ package com.netflix.eureka;
  * <p>The latest versions are always recommended.</p>
  *
  * @author Karthik Ranganathan, Greg Kim
- *
+ * 设置 API 版本号。默认最新 API 版本为 V2。
  */
 public enum Version {
     V1, V2;

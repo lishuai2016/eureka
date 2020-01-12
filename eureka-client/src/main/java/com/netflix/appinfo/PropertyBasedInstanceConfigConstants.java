@@ -2,7 +2,7 @@ package com.netflix.appinfo;
 
 /**
  * constants pertaining to property based instance configs
- *
+ * 可以看到配置文件的每个属性 KEY
  * @author David Liu
  */
 final class PropertyBasedInstanceConfigConstants {

@@ -16,6 +16,11 @@
 
 package com.netflix.discovery.shared.resolver;
 
+/**
+ EndPoint ，服务端点。例如，Eureka-Server 的访问地址。
+ EndPoint 解析器，将配置的 Eureka-Server 的访问地址解析成 EndPoint 。
+ */
+
 public interface EurekaEndpoint extends Comparable<Object> {
 
     String getServiceUrl();

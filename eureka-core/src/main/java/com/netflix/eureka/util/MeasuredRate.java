@@ -29,11 +29,11 @@ import org.slf4j.LoggerFactory;
  */
 public class MeasuredRate {
     private static final Logger logger = LoggerFactory.getLogger(MeasuredRate.class);
-    private final AtomicLong lastBucket = new AtomicLong(0);
-    private final AtomicLong currentBucket = new AtomicLong(0);
+    private final AtomicLong lastBucket = new AtomicLong(0);//上一个间隔次数
+    private final AtomicLong currentBucket = new AtomicLong(0);//当前间隔次数
 
-    private final long sampleInterval;
-    private final Timer timer;
+    private final long sampleInterval;//间隔
+    private final Timer timer;//定时器
 
     private volatile boolean isActive;
 

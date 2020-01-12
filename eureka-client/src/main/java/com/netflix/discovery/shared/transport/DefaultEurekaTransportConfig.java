@@ -6,12 +6,13 @@ import static com.netflix.discovery.shared.transport.PropertyBasedTransportConfi
 
 /**
  * @author David Liu
+ * 基于配置文件的网络传输配置实现类
  */
 public class DefaultEurekaTransportConfig implements EurekaTransportConfig {
     private static final String SUB_NAMESPACE = TRANSPORT_CONFIG_SUB_NAMESPACE + ".";
 
-    private final String namespace;
-    private final DynamicPropertyFactory configInstance;
+    private final String namespace;//命名空间
+    private final DynamicPropertyFactory configInstance;//配置文件对象
 
     public DefaultEurekaTransportConfig(String parentNamespace, DynamicPropertyFactory configInstance) {
         this.namespace = parentNamespace == null

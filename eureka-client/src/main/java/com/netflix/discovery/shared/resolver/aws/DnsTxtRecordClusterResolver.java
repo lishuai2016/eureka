@@ -73,14 +73,14 @@ import org.slf4j.LoggerFactory;
  *     </tbody>
  * </table>
  *
- * @author Tomasz Bak
+ * @author Tomasz Bak  基于 DNS TXT 记录类型的集群解析器
  */
 public class DnsTxtRecordClusterResolver implements ClusterResolver<AwsEndpoint> {
 
     private static final Logger logger = LoggerFactory.getLogger(DnsTxtRecordClusterResolver.class);
 
     private final String region;
-    private final String rootClusterDNS;
+    private final String rootClusterDNS;//集群根地址，例如 txt.default.eureka.iocoder.cn
     private final boolean extractZoneFromDNS;
     private final int port;
     private final boolean isSecure;

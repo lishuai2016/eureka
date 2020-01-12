@@ -201,6 +201,7 @@ public class PeerAwareInstanceRegistryImpl extends AbstractInstanceRegistry impl
      * Populates the registry information from a peer eureka node. This
      * operation fails over to other nodes until the list is exhausted if the
      * communication fails.
+     * 从集群的一个 Eureka-Server 节点获取初始注册信息
      */
     @Override
     public int syncUp() {
@@ -208,7 +209,7 @@ public class PeerAwareInstanceRegistryImpl extends AbstractInstanceRegistry impl
         int count = 0;
 
         for (int i = 0; ((i < serverConfig.getRegistrySyncRetries()) && (count == 0)); i++) {
-            if (i > 0) {
+            if (i > 0) {//第一次没有成功休眠一会再次执行
                 try {
                     Thread.sleep(serverConfig.getRegistrySyncRetryWaitMs());
                 } catch (InterruptedException e) {
@@ -216,12 +217,12 @@ public class PeerAwareInstanceRegistryImpl extends AbstractInstanceRegistry impl
                     break;
                 }
             }
-            Applications apps = eurekaClient.getApplications();
+            Applications apps = eurekaClient.getApplications();// 获取注册信息，注册到自身节点。
             for (Application app : apps.getRegisteredApplications()) {
                 for (InstanceInfo instance : app.getInstances()) {
                     try {
-                        if (isRegisterable(instance)) {
-                            register(instance, instance.getLeaseInfo().getDurationInSecs(), true);
+                        if (isRegisterable(instance)) {// 判断是否能够注册
+                            register(instance, instance.getLeaseInfo().getDurationInSecs(), true);// 注册
                             count++;
                         }
                     } catch (Throwable t) {
@@ -242,7 +243,7 @@ public class PeerAwareInstanceRegistryImpl extends AbstractInstanceRegistry impl
         logger.info("Renew threshold is: {}", numberOfRenewsPerMinThreshold);
         this.startupTime = System.currentTimeMillis();
         if (count > 0) {
-            this.peerInstancesTransferEmptyOnStartup = false;
+            this.peerInstancesTransferEmptyOnStartup = false;//标记 Eureka-Server 启动时，未获取到应用实例
         }
         DataCenterInfo.Name selfName = applicationInfoManager.getInfo().getDataCenterInfo().getName();
         boolean isAws = Name.Amazon == selfName;
@@ -370,12 +371,15 @@ public class PeerAwareInstanceRegistryImpl extends AbstractInstanceRegistry impl
      *
      * @see com.netflix.eureka.registry.InstanceRegistry#cancel(java.lang.String,
      * java.lang.String, long, boolean)
+     * 下线服务
      */
     @Override
     public boolean cancel(final String appName, final String id,
                           final boolean isReplication) {
-        if (super.cancel(appName, id, isReplication)) {
+        if (super.cancel(appName, id, isReplication)) {//调用父类的下线
+            // Eureka-Server 复制 集群同步
             replicateToPeers(Action.Cancel, appName, id, null, null, isReplication);
+            // 减少 `numberOfRenewsPerMinThreshold` 、`expectedNumberOfRenewsPerMin`
             synchronized (lock) {
                 if (this.expectedNumberOfClientsSendingRenews > 0) {
                     // Since the client wants to cancel it, reduce the number of clients to send renews
@@ -401,12 +405,12 @@ public class PeerAwareInstanceRegistryImpl extends AbstractInstanceRegistry impl
      */
     @Override
     public void register(final InstanceInfo info, final boolean isReplication) {
-        int leaseDuration = Lease.DEFAULT_DURATION_IN_SECS;
+        int leaseDuration = Lease.DEFAULT_DURATION_IN_SECS;//// 租约过期时间
         if (info.getLeaseInfo() != null && info.getLeaseInfo().getDurationInSecs() > 0) {
             leaseDuration = info.getLeaseInfo().getDurationInSecs();
         }
-        super.register(info, leaseDuration, isReplication);
-        replicateToPeers(Action.Register, info.getAppName(), info.getId(), info, null, isReplication);
+        super.register(info, leaseDuration, isReplication);// 注册应用实例信息
+        replicateToPeers(Action.Register, info.getAppName(), info.getId(), info, null, isReplication);// Eureka-Server 复制
     }
 
     /*
@@ -416,8 +420,8 @@ public class PeerAwareInstanceRegistryImpl extends AbstractInstanceRegistry impl
      * java.lang.String, long, boolean)
      */
     public boolean renew(final String appName, final String id, final boolean isReplication) {
-        if (super.renew(appName, id, isReplication)) {
-            replicateToPeers(Action.Heartbeat, appName, id, null, null, isReplication);
+        if (super.renew(appName, id, isReplication)) {//调用父类 AbstractInstanceRegistry#renew(...) 方法，注册应用实例信息
+            replicateToPeers(Action.Heartbeat, appName, id, null, null, isReplication);// Eureka-Server 复制
             return true;
         }
         return false;
@@ -435,6 +439,7 @@ public class PeerAwareInstanceRegistryImpl extends AbstractInstanceRegistry impl
                                 final InstanceStatus newStatus, String lastDirtyTimestamp,
                                 final boolean isReplication) {
         if (super.statusUpdate(appName, id, newStatus, lastDirtyTimestamp, isReplication)) {
+            // Eureka-Server 集群同步
             replicateToPeers(Action.StatusUpdate, appName, id, null, newStatus, isReplication);
             return true;
         }
@@ -590,6 +595,7 @@ public class PeerAwareInstanceRegistryImpl extends AbstractInstanceRegistry impl
      *
      * @param instanceInfo  th instance info information of the instance
      * @return true, if it can be registered in this server, false otherwise.
+     * 判断应用实例是否能够注册到自身节点。主要用于亚马逊 AWS 环境下的判断，若非部署在亚马逊里，都返回 true
      */
     public boolean isRegisterable(InstanceInfo instanceInfo) {
         DataCenterInfo datacenterInfo = instanceInfo.getDataCenterInfo();
@@ -617,21 +623,22 @@ public class PeerAwareInstanceRegistryImpl extends AbstractInstanceRegistry impl
                                   InstanceInfo info /* optional */,
                                   InstanceStatus newStatus /* optional */, boolean isReplication) {
         Stopwatch tracer = action.getTimer().start();
-        try {
+        try {//Eureka-Server 在处理上述操作( Action )，无论来自 Eureka-Client 发起请求，还是 Eureka-Server 发起同步，
+            // 调用的内部方法相同，通过 isReplication=true 参数，避免死循环同步
             if (isReplication) {
                 numberOfReplicationsLastMin.increment();
-            }
+            } // Eureka-Server 发起的请求 或者 集群为空
             // If it is a replication already, do not replicate again as this will create a poison replication
             if (peerEurekaNodes == Collections.EMPTY_LIST || isReplication) {
                 return;
             }
 
             for (final PeerEurekaNode node : peerEurekaNodes.getPeerEurekaNodes()) {
-                // If the url represents this host, do not replicate to yourself.
+                // If the url represents this host, do not replicate to yourself. 跳过自身节点
                 if (peerEurekaNodes.isThisMyUrl(node.getServiceUrl())) {
                     continue;
                 }
-                replicateInstanceActionsToPeers(action, appName, id, info, newStatus, node);
+                replicateInstanceActionsToPeers(action, appName, id, info, newStatus, node);//发起同步操作
             }
         } finally {
             tracer.stop();

@@ -28,10 +28,10 @@ public final class TransportUtils {
 
     public static EurekaHttpClient getOrSetAnotherClient(AtomicReference<EurekaHttpClient> eurekaHttpClientRef, EurekaHttpClient another) {
         EurekaHttpClient existing = eurekaHttpClientRef.get();
-        if (eurekaHttpClientRef.compareAndSet(null, another)) {
+        if (eurekaHttpClientRef.compareAndSet(null, another)) { // 为空才设置
             return another;
         }
-        another.shutdown();
+        another.shutdown();// 设置失败，意味着另外一个线程已经设置
         return existing;
     }
 

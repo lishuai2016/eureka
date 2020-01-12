@@ -56,6 +56,7 @@ import static com.netflix.discovery.util.DiscoveryBuildInfo.buildVersion;
 
 /**
  * @author Tomasz Bak
+ * 创建 JerseyApplicationClient 的工厂类
  */
 public class JerseyEurekaHttpClientFactory implements TransportClientFactory {
 
@@ -120,14 +121,14 @@ public class JerseyEurekaHttpClientFactory implements TransportClientFactory {
             apacheClient.destroy();
         }
     }
-    
+
     public static JerseyEurekaHttpClientFactory create(EurekaClientConfig clientConfig,
             Collection<ClientFilter> additionalFilters,
             InstanceInfo myInstanceInfo,
             AbstractEurekaIdentity clientIdentity) {
         return create(clientConfig, additionalFilters, myInstanceInfo, clientIdentity, Optional.empty(), Optional.empty());
     }
-
+    //创建 JerseyEurekaHttpClientFactory
     public static JerseyEurekaHttpClientFactory create(EurekaClientConfig clientConfig,
                                                        Collection<ClientFilter> additionalFilters,
                                                        InstanceInfo myInstanceInfo,
@@ -137,15 +138,15 @@ public class JerseyEurekaHttpClientFactory implements TransportClientFactory {
         boolean useExperimental = "true".equals(clientConfig.getExperimental("JerseyEurekaHttpClientFactory.useNewBuilder"));
 
         JerseyEurekaHttpClientFactoryBuilder clientBuilder = (useExperimental ? experimentalBuilder() : newBuilder())
-                .withAdditionalFilters(additionalFilters)
-                .withMyInstanceInfo(myInstanceInfo)
-                .withUserAgent("Java-EurekaClient")
+                .withAdditionalFilters(additionalFilters)// 客户端附加过滤器
+                .withMyInstanceInfo(myInstanceInfo)// 应用实例
+                .withUserAgent("Java-EurekaClient")// UA
                 .withClientConfig(clientConfig)
                 .withClientIdentity(clientIdentity);
-        
+
         sslContext.ifPresent(clientBuilder::withSSLContext);
         hostnameVerifier.ifPresent(clientBuilder::withHostnameVerifier);
-
+// 设置 Client Name
         if ("true".equals(System.getProperty("com.netflix.eureka.shouldSSLConnectionsUseSystemSocketFactory"))) {
             clientBuilder.withClientName("DiscoveryClient-HTTPClient-System").withSystemSSLConfiguration();
         } else if (clientConfig.getProxyHost() != null && clientConfig.getProxyPort() != null) {
@@ -172,6 +173,7 @@ public class JerseyEurekaHttpClientFactory implements TransportClientFactory {
     /**
      * Currently use EurekaJerseyClientBuilder. Once old transport in DiscoveryClient is removed, incorporate
      * EurekaJerseyClientBuilder here, and remove it.
+     * 内部类，用于创建 JerseyEurekaHttpClientFactory
      */
     public static class JerseyEurekaHttpClientFactoryBuilder extends EurekaClientFactoryBuilder<JerseyEurekaHttpClientFactory, JerseyEurekaHttpClientFactoryBuilder> {
 
@@ -222,7 +224,7 @@ public class JerseyEurekaHttpClientFactory implements TransportClientFactory {
             } else if (sslContext != null) {
                 clientBuilder.withCustomSSL(sslContext);
             }
-            
+
             if (hostnameVerifier != null) {
                 clientBuilder.withHostnameVerifier(hostnameVerifier);
             }

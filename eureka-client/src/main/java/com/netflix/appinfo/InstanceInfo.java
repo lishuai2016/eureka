@@ -48,7 +48,8 @@ import org.slf4j.LoggerFactory;
  * <code>@Auto</code> annotated fields are serialized as is; Other fields are
  * serialized as specified by the <code>@Serializer</code>.
  * </p>
- *
+ * 应用实例信息。Eureka-Client 向 Eureka-Server 注册该对象信息。
+ * 注册成功后，可以被其他 Eureka-Client 发现。
  * @author Karthik Ranganathan, Greg Kim
  */
 @ProvidedBy(EurekaConfigBasedInstanceInfoProvider.class)
@@ -136,8 +137,8 @@ public class InstanceInfo {
     private volatile boolean isUnsecurePortEnabled = true;
     private volatile DataCenterInfo dataCenterInfo;
     private volatile String hostName;
-    private volatile InstanceStatus status = InstanceStatus.UP;
-    private volatile InstanceStatus overriddenStatus = InstanceStatus.UNKNOWN;
+    private volatile InstanceStatus status = InstanceStatus.UP;//状态
+    private volatile InstanceStatus overriddenStatus = InstanceStatus.UNKNOWN;//覆盖状态
     @XStreamOmitField
     private volatile boolean isInstanceInfoDirty = false;
     private volatile LeaseInfo leaseInfo;
@@ -424,12 +425,12 @@ public class InstanceInfo {
             result.appName = intern.apply(appName.toUpperCase(Locale.ROOT));
             return this;
         }
-        
+
         public Builder setAppNameForDeser(String appName) {
             result.appName = appName;
             return this;
         }
-        
+
 
         public Builder setAppGroupName(String appGroupName) {
             if (appGroupName != null) {
@@ -1169,7 +1170,7 @@ public class InstanceInfo {
         if (this.status != status) {
             InstanceStatus prev = this.status;
             this.status = status;
-            setIsDirty();
+            setIsDirty();// 设置 应用实例信息 数据一致
             return prev;
         }
         return null;

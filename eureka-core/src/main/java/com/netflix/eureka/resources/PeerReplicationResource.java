@@ -40,7 +40,7 @@ import org.slf4j.LoggerFactory;
  * A <em>jersey</em> resource that handles requests for replication purposes.
  *
  * @author Karthik Ranganathan
- *
+ * 接收 Eureka-Server 同步操作
  */
 @Path("/{version}/peerreplication")
 @Produces({"application/xml", "application/json"})
@@ -80,6 +80,7 @@ public class PeerReplicationResource {
     public Response batchReplication(ReplicationList replicationList) {
         try {
             ReplicationListResponse batchResponse = new ReplicationListResponse();
+            // 逐个同步操作任务处理，并将处理结果( ReplicationInstanceResponse ) 合并到 ReplicationListResponse
             for (ReplicationInstance instanceInfo : replicationList.getReplicationList()) {
                 try {
                     batchResponse.addResponse(dispatch(instanceInfo));
@@ -95,7 +96,7 @@ public class PeerReplicationResource {
             return Response.status(Status.INTERNAL_SERVER_ERROR).build();
         }
     }
-
+    //分发处理任务
     private ReplicationInstanceResponse dispatch(ReplicationInstance instanceInfo) {
         ApplicationResource applicationResource = createApplicationResource(instanceInfo);
         InstanceResource resource = createInstanceResource(instanceInfo, applicationResource);

@@ -40,7 +40,7 @@ import org.slf4j.LoggerFactory;
  * If registration and query requests must handled separately, two different instances shall be created.
  * <h3>Thread safety</h3>
  * Methods in this class may be called concurrently.
- *
+ * 寻找非 302 重定向的 Eureka-Server 的 EurekaHttpClient
  * @author Tomasz Bak
  */
 public class RedirectingEurekaHttpClient extends EurekaHttpClientDecorator {
@@ -73,18 +73,18 @@ public class RedirectingEurekaHttpClient extends EurekaHttpClientDecorator {
     @Override
     protected <R> EurekaHttpResponse<R> execute(RequestExecutor<R> requestExecutor) {
         EurekaHttpClient currentEurekaClient = delegateRef.get();
-        if (currentEurekaClient == null) {
+        if (currentEurekaClient == null) { // 未找到非 302 的 Eureka-Server
             AtomicReference<EurekaHttpClient> currentEurekaClientRef = new AtomicReference<>(factory.newClient(serviceEndpoint));
             try {
-                EurekaHttpResponse<R> response = executeOnNewServer(requestExecutor, currentEurekaClientRef);
-                TransportUtils.shutdown(delegateRef.getAndSet(currentEurekaClientRef.get()));
+                EurekaHttpResponse<R> response = executeOnNewServer(requestExecutor, currentEurekaClientRef);//这里
+                TransportUtils.shutdown(delegateRef.getAndSet(currentEurekaClientRef.get()));// 关闭原有的委托 EurekaHttpClient ，并设置当前成功非 302 请求的 EurekaHttpClient
                 return response;
             } catch (Exception e) {
-                logger.error("Request execution error. endpoint={}", serviceEndpoint, e);
+                logger.error("Request execution error. endpoint={}", serviceEndpoint, e);//为什么这里会报错？？？javax.ws.rs.WebApplicationException: HTTP 400 Bad Request
                 TransportUtils.shutdown(currentEurekaClientRef.get());
                 throw e;
             }
-        } else {
+        } else {  // 已经找到非 302 的 Eureka-Server
             try {
                 return requestExecutor.execute(currentEurekaClient);
             } catch (Exception e) {
@@ -115,7 +115,7 @@ public class RedirectingEurekaHttpClient extends EurekaHttpClientDecorator {
                                                          AtomicReference<EurekaHttpClient> currentHttpClientRef) {
         URI targetUrl = null;
         for (int followRedirectCount = 0; followRedirectCount < MAX_FOLLOWED_REDIRECTS; followRedirectCount++) {
-            EurekaHttpResponse<R> httpResponse = requestExecutor.execute(currentHttpClientRef.get());
+            EurekaHttpResponse<R> httpResponse = requestExecutor.execute(currentHttpClientRef.get());//执行到这里提交任务
             if (httpResponse.getStatusCode() != 302) {
                 if (followRedirectCount == 0) {
                     logger.debug("Pinning to endpoint {}", targetUrl);

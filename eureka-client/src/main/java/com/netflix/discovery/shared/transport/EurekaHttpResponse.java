@@ -28,10 +28,10 @@ import java.util.Map;
  * @author Tomasz Bak
  */
 public class EurekaHttpResponse<T> {
-    private final int statusCode;
-    private final T entity;
-    private final Map<String, String> headers;
-    private final URI location;
+    private final int statusCode;//返回状态码
+    private final T entity;//返回对象( Entity )
+    private final Map<String, String> headers;//返回 header
+    private final URI location;//重定向地址
 
     protected EurekaHttpResponse(int statusCode, T entity) {
         this.statusCode = statusCode;

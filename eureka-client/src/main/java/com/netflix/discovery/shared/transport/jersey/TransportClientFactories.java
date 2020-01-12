@@ -10,8 +10,8 @@ import com.netflix.appinfo.InstanceInfo;
 import com.netflix.discovery.EurekaClientConfig;
 import com.netflix.discovery.shared.transport.TransportClientFactory;
 
-public interface TransportClientFactories<F> {
-    
+public interface TransportClientFactories<F> {//产生工厂的工厂
+
     @Deprecated
     public TransportClientFactory newTransportClientFactory(final Collection<F> additionalFilters,
                                                                    final EurekaJerseyClient providedJerseyClient);
@@ -19,7 +19,7 @@ public interface TransportClientFactories<F> {
     public TransportClientFactory newTransportClientFactory(final EurekaClientConfig clientConfig,
                                                                    final Collection<F> additionalFilters,
                                                                    final InstanceInfo myInstanceInfo);
-    
+
     public TransportClientFactory newTransportClientFactory(final EurekaClientConfig clientConfig,
             final Collection<F> additionalFilters,
             final InstanceInfo myInstanceInfo,
